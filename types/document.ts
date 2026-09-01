@@ -40,6 +40,32 @@ export interface AutoLayout {
 
 export type Breakpoint = "desktop" | "tablet" | "mobile";
 
+// The subset of visual properties an animation can tween (blueprint 5.6).
+export interface AnimatableProps {
+  opacity?: number;
+  x?: number;
+  y?: number;
+  scale?: number;
+  rotate?: number;
+}
+
+export type AnimationTrigger = "load" | "hover" | "click";
+export type Easing = "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out";
+
+// A single from/to transition on a node, fired by load/hover/click
+// (blueprint 5.6 Motion Studio — a simplified transition model rather than a
+// full multi-keyframe timeline).
+export interface NodeAnimation {
+  id: string;
+  trigger: AnimationTrigger;
+  duration: number;
+  delay: number;
+  easing: Easing;
+  repeat: boolean;
+  from: AnimatableProps;
+  to: AnimatableProps;
+}
+
 export interface DesignNode {
   id: string;
   type: NodeType;
@@ -56,8 +82,10 @@ export interface DesignNode {
   layout: NodeLayout;
   autoLayout?: AutoLayout;
   responsive?: Partial<Record<Breakpoint, Partial<NodeLayout & NodeStyle>>>;
-  interactions?: unknown[];
-  animations?: unknown[];
+  // Event -> action rule (blueprint 5.7 Interaction Studio): navigate to
+  // another page in the project when this node is clicked, in preview.
+  onClickNavigateToPageId?: string;
+  animations?: NodeAnimation[];
   // Only set when type === "instance": which component this node instantiates,
   // and an optional override for that component's primary text content
   // (blueprint 5.14 "component instances with override controls").

@@ -90,7 +90,15 @@ export function updateNode(
   patch: Partial<
     Pick<
       DesignNode,
-      "name" | "props" | "style" | "layout" | "autoLayout" | "responsive" | "overrideText"
+      | "name"
+      | "props"
+      | "style"
+      | "layout"
+      | "autoLayout"
+      | "responsive"
+      | "overrideText"
+      | "animations"
+      | "onClickNavigateToPageId"
     >
   >
 ): DesignDocument {

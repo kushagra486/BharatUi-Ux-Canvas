@@ -38,7 +38,15 @@ interface EditorState {
     patch: Partial<
       Pick<
         DesignNode,
-        "name" | "props" | "style" | "layout" | "autoLayout" | "responsive" | "overrideText"
+        | "name"
+        | "props"
+        | "style"
+        | "layout"
+        | "autoLayout"
+        | "responsive"
+        | "overrideText"
+        | "animations"
+        | "onClickNavigateToPageId"
       >
     >
   ) => void;

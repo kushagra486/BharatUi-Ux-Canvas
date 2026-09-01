@@ -79,7 +79,13 @@ export default function PreviewPage() {
         </div>
       )}
       <div className="mx-auto bg-white" style={{ width: "100%", maxWidth: width }}>
-        <NodeView node={effectiveRoot} document={page.document} isRoot readOnly />
+        <NodeView
+          node={effectiveRoot}
+          document={page.document}
+          isRoot
+          readOnly
+          onNavigate={setPageId}
+        />
       </div>
     </div>
   );

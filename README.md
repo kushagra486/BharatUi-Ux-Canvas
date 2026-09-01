@@ -5,8 +5,8 @@ web applications — combining a visual UI/UX editor, responsive layout
 system, motion studio, illustration and 3D tools, AI-assisted creation,
 reusable components, code generation, and a creator marketplace.
 
-This repository currently implements **MVP 1 and MVP 2** from the project
-blueprint:
+This repository currently implements **MVP 1, MVP 2, and the core of
+MVP 3** from the project blueprint:
 
 - Auth, dashboard, project persistence, multi-page projects
 - Visual canvas with layers, the core element set
@@ -19,6 +19,11 @@ blueprint:
   instances elsewhere, override an instance's text without touching the
   source definition, and detach an instance back into editable nodes
 - A read-only `/preview/[projectId]` route separate from the editor
+- Motion: per-node load/hover/click animations (opacity, position, scale,
+  rotate) with duration/delay/easing/repeat, played back in preview and
+  respecting `prefers-reduced-motion`
+- Interaction: an on-click "navigate to page" rule per node, live in
+  preview
 
 ## Getting started
 
@@ -53,7 +58,7 @@ The design document (`types/document.ts`) is framework-neutral: the same
 node tree is meant to power the editor, the preview renderer, and — in
 later milestones — the code generator, per the project blueprint.
 
-## Known MVP2 limitations
+## Known limitations
 
 - Component instances render their definition read-only and support only
   a single text override (the first text/button node found); there is no
@@ -62,13 +67,18 @@ later milestones — the code generator, per the project blueprint.
   container manually if children overflow it.
 - Breakpoint preview buckets window width into exactly three sizes
   (desktop/tablet/mobile); there's no arbitrary custom breakpoint.
+- Motion is a simplified from/to transition model, not a full multi-
+  keyframe timeline: one animation per trigger (load/hover/click) per
+  node, and only click/hover/load — no scroll-linked or gesture triggers
+  yet. Animation and interaction playback only run in preview and inside
+  component-instance previews, not live on the editing canvas.
 
 ## Roadmap
 
 See the full blueprint for the complete feature catalogue, architecture,
-and phased roadmap (motion studio, illustration, 3D, marketplace, AI
-studio, collaboration, and publishing). Still outstanding after MVP 1/2:
-undo/redo, real backend/auth (everything today is local-only, per-browser
-storage), asset library/upload, design tokens, code generation, and
-everything from MVP 3 onward (motion, illustration, 3D, AI studio,
-collaboration, marketplace, deployment).
+and phased roadmap (illustration, 3D, marketplace, AI studio,
+collaboration, and publishing). Still outstanding after MVP 1–3: undo/redo,
+real backend/auth (everything today is local-only, per-browser storage),
+asset library/upload, design tokens, a full keyframe timeline UI, scroll/
+cinematic effects, code generation, illustration/3D/AI studio,
+collaboration, marketplace, and deployment.

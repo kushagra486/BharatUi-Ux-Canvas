@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { DesignDocument, DesignNode } from "@/types/document";
+import { useEffect, useRef, useState } from "react";
+import { AnimatableProps, DesignDocument, DesignNode, NodeAnimation } from "@/types/document";
 import { useEditorStore } from "@/store/editor-store";
 import { findFirstTextNodeId, resolveNode } from "@/engine/document/document";
 
@@ -10,10 +10,12 @@ interface NodeViewProps {
   document: DesignDocument;
   isRoot?: boolean;
   inFlexParent?: boolean;
-  /** True inside a component instance's embedded preview: no drag/resize/selection, content is inert. */
+  /** True inside a component instance's embedded preview, or the standalone preview route: no drag/resize/selection. */
   readOnly?: boolean;
   overrideTargetId?: string | null;
   overrideText?: string;
+  /** Only used by the standalone preview route: fires when a node with an on-click navigate action is clicked. */
+  onNavigate?: (pageId: string) => void;
 }
 
 const JUSTIFY_MAP: Record<string, string> = {
@@ -29,6 +31,16 @@ const ALIGN_MAP: Record<string, string> = {
   end: "flex-end",
 };
 
+function transformFor(props: AnimatableProps): string | undefined {
+  const parts: string[] = [];
+  if (props.x !== undefined || props.y !== undefined) {
+    parts.push(`translate(${props.x ?? 0}px, ${props.y ?? 0}px)`);
+  }
+  if (props.scale !== undefined) parts.push(`scale(${props.scale})`);
+  if (props.rotate !== undefined) parts.push(`rotate(${props.rotate}deg)`);
+  return parts.length > 0 ? parts.join(" ") : undefined;
+}
+
 export default function NodeView({
   node: rawNode,
   document,
@@ -37,6 +49,7 @@ export default function NodeView({
   readOnly,
   overrideTargetId,
   overrideText,
+  onNavigate,
 }: NodeViewProps) {
   const selectedNodeId = useEditorStore((s) => s.selectedNodeId);
   const selectNode = useEditorStore((s) => s.selectNode);
@@ -50,6 +63,45 @@ export default function NodeView({
   const resizeRef = useRef<{ startX: number; startY: number; origW: number; origH: number } | null>(
     null
   );
+
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+  const [loadPlayed, setLoadPlayed] = useState(false);
+  const [reducedMotion] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+
+  const animations = node.animations ?? [];
+  const clickAnimation = animations.find((a) => a.trigger === "click");
+  const hoverAnimation = animations.find((a) => a.trigger === "hover");
+  const loadAnimation = animations.find((a) => a.trigger === "load");
+  const hasLoadAnimation = !!loadAnimation;
+
+  useEffect(() => {
+    if (!readOnly || !hasLoadAnimation) return;
+    const raf = requestAnimationFrame(() => setLoadPlayed(true));
+    return () => cancelAnimationFrame(raf);
+  }, [readOnly, hasLoadAnimation]);
+
+  let activeAnimation: NodeAnimation | undefined;
+  let phase: "from" | "to" = "from";
+  if (readOnly) {
+    if (clickAnimation) {
+      activeAnimation = clickAnimation;
+      phase = clicked ? "to" : "from";
+    } else if (hoverAnimation) {
+      activeAnimation = hoverAnimation;
+      phase = hovered ? "to" : "from";
+    } else if (loadAnimation) {
+      activeAnimation = loadAnimation;
+      phase = loadPlayed ? "to" : "from";
+    }
+  }
+  const activeProps: AnimatableProps = activeAnimation
+    ? phase === "to"
+      ? activeAnimation.to
+      : activeAnimation.from
+    : {};
 
   const isSelected = !readOnly && selectedNodeId === node.id;
   const draggable = !readOnly && !isRoot && !inFlexParent;
@@ -114,6 +166,12 @@ export default function NodeView({
     resizeRef.current = null;
   }
 
+  function handleClick() {
+    if (!readOnly) return;
+    if (clickAnimation) setClicked((prev) => (clickAnimation.repeat ? !prev : true));
+    if (node.onClickNavigateToPageId && onNavigate) onNavigate(node.onClickNavigateToPageId);
+  }
+
   const flexStyles: React.CSSProperties = node.autoLayout
     ? {
         display: "flex",
@@ -125,6 +183,19 @@ export default function NodeView({
       }
     : {};
 
+  const animationStyles: React.CSSProperties = activeAnimation
+    ? {
+        transform: transformFor(activeProps),
+        opacity: activeProps.opacity,
+        transition: reducedMotion
+          ? "none"
+          : `transform ${activeAnimation.duration}ms ${activeAnimation.easing} ${activeAnimation.delay}ms, opacity ${activeAnimation.duration}ms ${activeAnimation.easing} ${activeAnimation.delay}ms`,
+        cursor: node.onClickNavigateToPageId ? "pointer" : undefined,
+      }
+    : node.onClickNavigateToPageId
+      ? { cursor: "pointer" }
+      : {};
+
   const style: React.CSSProperties = isRoot
     ? {
         position: "relative",
@@ -133,6 +204,7 @@ export default function NodeView({
         backgroundColor: node.style.backgroundColor,
         borderRadius: node.style.borderRadius,
         ...flexStyles,
+        ...animationStyles,
       }
     : {
         position: inFlexParent ? "relative" : "absolute",
@@ -167,7 +239,7 @@ export default function NodeView({
         userSelect: "none",
         outline: isSelected ? "2px solid #2563eb" : "1px solid transparent",
         outlineOffset: -1,
-        pointerEvents: readOnly ? "none" : undefined,
+        ...animationStyles,
       };
 
   const component =
@@ -181,6 +253,9 @@ export default function NodeView({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onMouseEnter={readOnly ? () => setHovered(true) : undefined}
+      onMouseLeave={readOnly ? () => setHovered(false) : undefined}
+      onClick={readOnly ? handleClick : undefined}
       data-node-id={node.id}
     >
       {node.type === "text" && <span className="px-1">{displayText || "Text"}</span>}
@@ -205,6 +280,7 @@ export default function NodeView({
               readOnly
               overrideTargetId={findFirstTextNodeId(component.document)}
               overrideText={node.overrideText}
+              onNavigate={onNavigate}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">
@@ -226,6 +302,7 @@ export default function NodeView({
             readOnly={readOnly}
             overrideTargetId={overrideTargetId}
             overrideText={overrideText}
+            onNavigate={onNavigate}
           />
         );
       })}

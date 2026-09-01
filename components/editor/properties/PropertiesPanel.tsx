@@ -3,6 +3,7 @@
 import { useEditorStore } from "@/store/editor-store";
 import { resolveNode } from "@/engine/document/document";
 import { AutoLayout } from "@/types/document";
+import MotionSection from "./MotionSection";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -334,6 +335,8 @@ export default function PropertiesPanel() {
         </div>
       </section>
       )}
+
+      <MotionSection node={rawNode} pages={project?.pages ?? []} updateSelected={updateSelected} />
 
       <button
         onClick={deleteSelected}
