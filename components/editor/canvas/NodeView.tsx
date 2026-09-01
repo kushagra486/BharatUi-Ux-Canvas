@@ -3,17 +3,47 @@
 import { useRef } from "react";
 import { DesignDocument, DesignNode } from "@/types/document";
 import { useEditorStore } from "@/store/editor-store";
+import { findFirstTextNodeId, resolveNode } from "@/engine/document/document";
 
 interface NodeViewProps {
   node: DesignNode;
   document: DesignDocument;
   isRoot?: boolean;
+  inFlexParent?: boolean;
+  /** True inside a component instance's embedded preview: no drag/resize/selection, content is inert. */
+  readOnly?: boolean;
+  overrideTargetId?: string | null;
+  overrideText?: string;
 }
 
-export default function NodeView({ node, document, isRoot }: NodeViewProps) {
+const JUSTIFY_MAP: Record<string, string> = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+  between: "space-between",
+};
+
+const ALIGN_MAP: Record<string, string> = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+};
+
+export default function NodeView({
+  node: rawNode,
+  document,
+  isRoot,
+  inFlexParent,
+  readOnly,
+  overrideTargetId,
+  overrideText,
+}: NodeViewProps) {
   const selectedNodeId = useEditorStore((s) => s.selectedNodeId);
   const selectNode = useEditorStore((s) => s.selectNode);
   const updateSelected = useEditorStore((s) => s.updateSelected);
+  const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint);
+  const project = useEditorStore((s) => s.project);
+  const node = resolveNode(rawNode, readOnly ? "desktop" : activeBreakpoint);
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(
     null
   );
@@ -21,12 +51,15 @@ export default function NodeView({ node, document, isRoot }: NodeViewProps) {
     null
   );
 
-  const isSelected = selectedNodeId === node.id;
+  const isSelected = !readOnly && selectedNodeId === node.id;
+  const draggable = !readOnly && !isRoot && !inFlexParent;
+  const displayText = node.id === overrideTargetId && overrideText ? overrideText : node.props.text;
 
   function handlePointerDown(e: React.PointerEvent) {
-    if (isRoot) return;
+    if (readOnly || isRoot) return;
     e.stopPropagation();
     selectNode(node.id);
+    if (!draggable) return;
     (e.target as Element).setPointerCapture(e.pointerId);
     dragRef.current = {
       startX: e.clientX,
@@ -81,6 +114,17 @@ export default function NodeView({ node, document, isRoot }: NodeViewProps) {
     resizeRef.current = null;
   }
 
+  const flexStyles: React.CSSProperties = node.autoLayout
+    ? {
+        display: "flex",
+        flexDirection: node.autoLayout.direction,
+        gap: node.autoLayout.gap,
+        padding: node.autoLayout.padding,
+        alignItems: ALIGN_MAP[node.autoLayout.align],
+        justifyContent: JUSTIFY_MAP[node.autoLayout.justify],
+      }
+    : {};
+
   const style: React.CSSProperties = isRoot
     ? {
         position: "relative",
@@ -88,11 +132,13 @@ export default function NodeView({ node, document, isRoot }: NodeViewProps) {
         height: node.layout.height,
         backgroundColor: node.style.backgroundColor,
         borderRadius: node.style.borderRadius,
+        ...flexStyles,
       }
     : {
-        position: "absolute",
-        left: node.layout.x,
-        top: node.layout.y,
+        position: inFlexParent ? "relative" : "absolute",
+        left: inFlexParent ? undefined : node.layout.x,
+        top: inFlexParent ? undefined : node.layout.y,
+        flexShrink: inFlexParent ? 0 : undefined,
         width: node.layout.width,
         height: node.layout.height,
         backgroundColor: node.style.backgroundColor,
@@ -106,18 +152,28 @@ export default function NodeView({ node, document, isRoot }: NodeViewProps) {
         fontWeight: node.style.fontWeight,
         textAlign: node.style.textAlign,
         display: "flex",
-        alignItems: node.type === "button" ? "center" : "flex-start",
-        justifyContent:
-          node.style.textAlign === "center"
+        alignItems: node.autoLayout ? ALIGN_MAP[node.autoLayout.align] : node.type === "button" ? "center" : "flex-start",
+        justifyContent: node.autoLayout
+          ? JUSTIFY_MAP[node.autoLayout.justify]
+          : node.style.textAlign === "center"
             ? "center"
             : node.style.textAlign === "right"
               ? "flex-end"
               : "flex-start",
-        cursor: "move",
+        flexDirection: node.autoLayout?.direction,
+        gap: node.autoLayout?.gap,
+        padding: node.autoLayout?.padding,
+        cursor: readOnly ? "default" : draggable ? "move" : "default",
         userSelect: "none",
         outline: isSelected ? "2px solid #2563eb" : "1px solid transparent",
         outlineOffset: -1,
+        pointerEvents: readOnly ? "none" : undefined,
       };
+
+  const component =
+    node.type === "instance" && node.componentId
+      ? project?.components.find((c) => c.id === node.componentId)
+      : undefined;
 
   return (
     <div
@@ -127,8 +183,8 @@ export default function NodeView({ node, document, isRoot }: NodeViewProps) {
       onPointerUp={handlePointerUp}
       data-node-id={node.id}
     >
-      {node.type === "text" && <span className="px-1">{node.props.text || "Text"}</span>}
-      {node.type === "button" && <span className="px-2">{node.props.text || "Button"}</span>}
+      {node.type === "text" && <span className="px-1">{displayText || "Text"}</span>}
+      {node.type === "button" && <span className="px-2">{displayText || "Button"}</span>}
       {node.type === "image" && (
         <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">
           {node.props.src ? (
@@ -139,11 +195,39 @@ export default function NodeView({ node, document, isRoot }: NodeViewProps) {
           )}
         </div>
       )}
+      {node.type === "instance" && (
+        <div className="absolute inset-0 overflow-hidden">
+          {component ? (
+            <NodeView
+              node={component.document.nodes[component.document.rootId]}
+              document={component.document}
+              isRoot
+              readOnly
+              overrideTargetId={findFirstTextNodeId(component.document)}
+              overrideText={node.overrideText}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">
+              Missing component
+            </div>
+          )}
+        </div>
+      )}
 
       {node.children.map((childId) => {
         const child = document.nodes[childId];
         if (!child) return null;
-        return <NodeView key={childId} node={child} document={document} />;
+        return (
+          <NodeView
+            key={childId}
+            node={child}
+            document={document}
+            inFlexParent={!!node.autoLayout}
+            readOnly={readOnly}
+            overrideTargetId={overrideTargetId}
+            overrideText={overrideText}
+          />
+        );
       })}
 
       {isSelected && !isRoot && (

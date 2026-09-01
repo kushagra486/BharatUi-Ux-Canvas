@@ -6,7 +6,8 @@ export type NodeType =
   | "container"
   | "text"
   | "image"
-  | "button";
+  | "button"
+  | "instance";
 
 export interface NodeStyle {
   backgroundColor?: string;
@@ -27,6 +28,18 @@ export interface NodeLayout {
   height: number;
 }
 
+// When set on a frame/container, its children flow via flexbox instead of
+// free-form x/y positioning (blueprint 5.4 "auto layout").
+export interface AutoLayout {
+  direction: "row" | "column";
+  gap: number;
+  padding: number;
+  align: "start" | "center" | "end";
+  justify: "start" | "center" | "end" | "between";
+}
+
+export type Breakpoint = "desktop" | "tablet" | "mobile";
+
 export interface DesignNode {
   id: string;
   type: NodeType;
@@ -41,9 +54,15 @@ export interface DesignNode {
   };
   style: NodeStyle;
   layout: NodeLayout;
-  responsive?: Record<string, Partial<NodeLayout & NodeStyle>>;
+  autoLayout?: AutoLayout;
+  responsive?: Partial<Record<Breakpoint, Partial<NodeLayout & NodeStyle>>>;
   interactions?: unknown[];
   animations?: unknown[];
+  // Only set when type === "instance": which component this node instantiates,
+  // and an optional override for that component's primary text content
+  // (blueprint 5.14 "component instances with override controls").
+  componentId?: string;
+  overrideText?: string;
 }
 
 export interface DesignDocument {
@@ -57,6 +76,14 @@ export interface Page {
   document: DesignDocument;
 }
 
+// A reusable component definition (blueprint 5.14): a standalone snapshot of a
+// node subtree that instances on any page can reference and lightly override.
+export interface ComponentDefinition {
+  id: string;
+  name: string;
+  document: DesignDocument;
+}
+
 export interface Project {
   id: string;
   ownerEmail: string;
@@ -64,7 +91,14 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   pages: Page[];
+  components: ComponentDefinition[];
 }
+
+export const BREAKPOINT_WIDTHS: Record<Breakpoint, number> = {
+  desktop: 1280,
+  tablet: 834,
+  mobile: 390,
+};
 
 export function createEmptyDocument(): DesignDocument {
   const rootId = "root";
@@ -102,5 +136,6 @@ export function createProject(ownerEmail: string, name: string): Project {
     createdAt: now,
     updatedAt: now,
     pages: [createPage("Home")],
+    components: [],
   };
 }
