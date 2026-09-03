@@ -24,6 +24,9 @@ MVP 3** from the project blueprint:
   respecting `prefers-reduced-motion`
 - Interaction: an on-click "navigate to page" rule per node, live in
   preview
+- Code generation: export a page as a self-contained static HTML/CSS
+  file (auto layout, breakpoints, load/hover animations, and
+  reduced-motion all reproduced in plain CSS — no app JS dependency)
 
 ## Getting started
 
@@ -72,6 +75,9 @@ later milestones — the code generator, per the project blueprint.
   node, and only click/hover/load — no scroll-linked or gesture triggers
   yet. Animation and interaction playback only run in preview and inside
   component-instance previews, not live on the editing canvas.
+- Export is HTML/CSS only, one page at a time. Click-triggered animations
+  and the click-navigate interaction aren't in the export (no JS is
+  emitted). There is no React/Next.js export yet.
 
 ## Roadmap
 
@@ -80,5 +86,5 @@ and phased roadmap (illustration, 3D, marketplace, AI studio,
 collaboration, and publishing). Still outstanding after MVP 1–3: undo/redo,
 real backend/auth (everything today is local-only, per-browser storage),
 asset library/upload, design tokens, a full keyframe timeline UI, scroll/
-cinematic effects, code generation, illustration/3D/AI studio,
-collaboration, marketplace, and deployment.
+cinematic effects, React/Next.js export, whole-project export, illustration/
+3D/AI studio, collaboration, marketplace, and deployment.

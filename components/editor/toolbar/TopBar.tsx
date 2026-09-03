@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useEditorStore } from "@/store/editor-store";
 import { Breakpoint } from "@/types/document";
+import ExportModal from "@/components/editor/export/ExportModal";
 
 const breakpoints: { id: Breakpoint; label: string }[] = [
   { id: "desktop", label: "Desktop" },
@@ -15,6 +17,7 @@ export default function TopBar() {
   const status = useEditorStore((s) => s.status);
   const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint);
   const setBreakpoint = useEditorStore((s) => s.setBreakpoint);
+  const [exportOpen, setExportOpen] = useState(false);
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-950">
@@ -46,18 +49,28 @@ export default function TopBar() {
 
       <div className="flex items-center gap-3">
         {project && (
-          <Link
-            href={`/preview/${project.id}`}
-            target="_blank"
-            className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-          >
-            Preview
-          </Link>
+          <>
+            <button
+              onClick={() => setExportOpen(true)}
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            >
+              Export
+            </button>
+            <Link
+              href={`/preview/${project.id}`}
+              target="_blank"
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            >
+              Preview
+            </Link>
+          </>
         )}
         <div className="w-14 text-right text-xs text-zinc-400">
           {status === "saving" ? "Saving…" : status === "saved" ? "Saved" : ""}
         </div>
       </div>
+
+      {exportOpen && <ExportModal onClose={() => setExportOpen(false)} />}
     </header>
   );
 }
