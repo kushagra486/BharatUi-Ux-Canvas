@@ -19,12 +19,19 @@ import {
   updateNode,
 } from "@/engine/document/document";
 
+const HISTORY_LIMIT = 50;
+// Continuous edits (dragging, resizing, typing) within this window collapse
+// into a single undo step instead of one per pointermove/keystroke.
+const CONTINUOUS_HISTORY_THROTTLE_MS = 500;
+
 interface EditorState {
   project: Project | null;
   activePageId: string | null;
   selectedNodeId: string | null;
   activeBreakpoint: Breakpoint;
   status: "idle" | "loading" | "saving" | "saved" | "error";
+  past: Project[];
+  future: Project[];
 
   load: (projectId: string) => Promise<void>;
   selectPage: (pageId: string) => void;
@@ -54,16 +61,36 @@ interface EditorState {
   createComponentFromSelection: () => void;
   insertComponentInstance: (componentId: string) => void;
   detachSelected: () => void;
+  undo: () => void;
+  redo: () => void;
   save: () => Promise<void>;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let lastContinuousHistoryPushAt = 0;
+
+/** Records the current project onto the undo stack before a mutation, clearing redo. */
+function pushHistory(
+  get: () => EditorState,
+  set: (patch: Partial<EditorState>) => void,
+  options?: { continuous?: boolean }
+): void {
+  const { project, past } = get();
+  if (!project) return;
+  if (options?.continuous) {
+    const now = Date.now();
+    if (now - lastContinuousHistoryPushAt < CONTINUOUS_HISTORY_THROTTLE_MS) return;
+    lastContinuousHistoryPushAt = now;
+  }
+  set({ past: [...past, project].slice(-HISTORY_LIMIT), future: [] });
+}
 
 /** Applies `fn` to the active page's document, writes the result back, and schedules a save. */
 function withActivePageDocument(
   get: () => EditorState,
   set: (patch: Partial<EditorState>) => void,
-  fn: (doc: DesignDocument, page: Page) => DesignDocument
+  fn: (doc: DesignDocument, page: Page) => DesignDocument,
+  options?: { continuous?: boolean }
 ): void {
   const { project, activePageId } = get();
   if (!project || !activePageId) return;
@@ -71,6 +98,7 @@ function withActivePageDocument(
   if (pageIdx === -1) return;
   const page = project.pages[pageIdx];
   const doc = fn(page.document, page);
+  pushHistory(get, set, options);
   const pages = [...project.pages];
   pages[pageIdx] = { ...page, document: doc };
   set({ project: { ...project, pages } });
@@ -83,6 +111,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectedNodeId: null,
   activeBreakpoint: "desktop",
   status: "idle",
+  past: [],
+  future: [],
 
   load: async (projectId: string) => {
     set({ status: "loading" });
@@ -94,6 +124,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activePageId: project?.pages[0]?.id ?? null,
       selectedNodeId: null,
       status: project ? "saved" : "error",
+      past: [],
+      future: [],
     });
   },
 
@@ -104,6 +136,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   addPage: () => {
     const { project } = get();
     if (!project) return;
+    pushHistory(get, set);
     const page = createPage(`Page ${project.pages.length + 1}`);
     set({
       project: { ...project, pages: [...project.pages, page] },
@@ -116,6 +149,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   renamePage: (pageId, name) => {
     const { project } = get();
     if (!project) return;
+    pushHistory(get, set);
     const pages = project.pages.map((p) => (p.id === pageId ? { ...p, name } : p));
     set({ project: { ...project, pages } });
     get().save();
@@ -124,6 +158,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   deletePage: (pageId) => {
     const { project, activePageId } = get();
     if (!project || project.pages.length <= 1) return;
+    pushHistory(get, set);
     const pages = project.pages.filter((p) => p.id !== pageId);
     const nextActive = activePageId === pageId ? pages[0].id : activePageId;
     set({ project: { ...project, pages }, activePageId: nextActive, selectedNodeId: null });
@@ -153,25 +188,30 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   updateSelected: (patch) => {
     const { selectedNodeId, activeBreakpoint } = get();
     if (!selectedNodeId) return;
-    withActivePageDocument(get, set, (doc) => {
-      const { layout, style, ...rest } = patch;
-      let nextDoc = doc;
-      if (Object.keys(rest).length > 0) {
-        nextDoc = updateNode(nextDoc, selectedNodeId, rest);
-      }
-      if (!layout && !style) return nextDoc;
-      if (activeBreakpoint === "desktop") {
-        return updateNode(nextDoc, selectedNodeId, { layout, style });
-      }
-      // Non-desktop breakpoints write into the node's per-breakpoint override
-      // instead of its base layout/style (blueprint 5.4 responsive layout).
-      const node = nextDoc.nodes[selectedNodeId];
-      const existing = node.responsive?.[activeBreakpoint] ?? {};
-      const merged = { ...existing, ...layout, ...style };
-      return updateNode(nextDoc, selectedNodeId, {
-        responsive: { ...node.responsive, [activeBreakpoint]: merged },
-      });
-    });
+    withActivePageDocument(
+      get,
+      set,
+      (doc) => {
+        const { layout, style, ...rest } = patch;
+        let nextDoc = doc;
+        if (Object.keys(rest).length > 0) {
+          nextDoc = updateNode(nextDoc, selectedNodeId, rest);
+        }
+        if (!layout && !style) return nextDoc;
+        if (activeBreakpoint === "desktop") {
+          return updateNode(nextDoc, selectedNodeId, { layout, style });
+        }
+        // Non-desktop breakpoints write into the node's per-breakpoint override
+        // instead of its base layout/style (blueprint 5.4 responsive layout).
+        const node = nextDoc.nodes[selectedNodeId];
+        const existing = node.responsive?.[activeBreakpoint] ?? {};
+        const merged = { ...existing, ...layout, ...style };
+        return updateNode(nextDoc, selectedNodeId, {
+          responsive: { ...node.responsive, [activeBreakpoint]: merged },
+        });
+      },
+      { continuous: true }
+    );
   },
 
   deleteSelected: () => {
@@ -196,6 +236,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       document: extractComponentDocument(page.document, selectedNodeId),
     };
     const doc = convertToComponentInstance(page.document, selectedNodeId, definition.id);
+    pushHistory(get, set);
     const pages = [...project.pages];
     pages[pageIdx] = { ...page, document: doc };
     set({ project: { ...project, pages, components: [...project.components, definition] } });
@@ -232,6 +273,36 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       if (!definition) return doc;
       return detachInstance(doc, selectedNodeId, definition.document, node.overrideText);
     });
+  },
+
+  undo: () => {
+    const { past, project, future, activePageId } = get();
+    if (past.length === 0 || !project) return;
+    const previous = past[past.length - 1];
+    const pageStillExists = previous.pages.some((p) => p.id === activePageId);
+    set({
+      project: previous,
+      past: past.slice(0, -1),
+      future: [project, ...future],
+      selectedNodeId: null,
+      activePageId: pageStillExists ? activePageId : previous.pages[0].id,
+    });
+    get().save();
+  },
+
+  redo: () => {
+    const { future, project, past, activePageId } = get();
+    if (future.length === 0 || !project) return;
+    const next = future[0];
+    const pageStillExists = next.pages.some((p) => p.id === activePageId);
+    set({
+      project: next,
+      future: future.slice(1),
+      past: [...past, project],
+      selectedNodeId: null,
+      activePageId: pageStillExists ? activePageId : next.pages[0].id,
+    });
+    get().save();
   },
 
   save: async () => {

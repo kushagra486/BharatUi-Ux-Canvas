@@ -19,6 +19,8 @@ export default function EditorPage() {
   const status = useEditorStore((s) => s.status);
   const deleteSelected = useEditorStore((s) => s.deleteSelected);
   const selectedNodeId = useEditorStore((s) => s.selectedNodeId);
+  const undo = useEditorStore((s) => s.undo);
+  const redo = useEditorStore((s) => s.redo);
 
   useEffect(() => {
     if (session && params.projectId) {
@@ -29,15 +31,30 @@ export default function EditorPage() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
-      if ((e.key === "Backspace" || e.key === "Delete") && selectedNodeId) {
+      const isTextInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      if (!isTextInput && (e.key === "Backspace" || e.key === "Delete") && selectedNodeId) {
         e.preventDefault();
         deleteSelected();
+        return;
+      }
+      // Undo/redo stays global even while a properties field has focus — this is a
+      // design tool, so Ctrl/Cmd+Z means "undo the last canvas change" the way
+      // Figma/Sketch treat it, not "undo the last keystroke in this text field".
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        redo();
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNodeId, deleteSelected]);
+  }, [selectedNodeId, deleteSelected, undo, redo]);
 
   if (!session) return null;
 

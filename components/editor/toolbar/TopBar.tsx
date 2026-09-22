@@ -17,6 +17,10 @@ export default function TopBar() {
   const status = useEditorStore((s) => s.status);
   const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint);
   const setBreakpoint = useEditorStore((s) => s.setBreakpoint);
+  const canUndo = useEditorStore((s) => s.past.length > 0);
+  const canRedo = useEditorStore((s) => s.future.length > 0);
+  const undo = useEditorStore((s) => s.undo);
+  const redo = useEditorStore((s) => s.redo);
   const [exportOpen, setExportOpen] = useState(false);
 
   return (
@@ -29,6 +33,24 @@ export default function TopBar() {
         <span className="text-sm text-zinc-600 dark:text-zinc-400">
           {project?.name ?? "Loading…"}
         </span>
+        <div className="ml-2 flex items-center gap-0.5">
+          <button
+            onClick={undo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+            className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-zinc-900"
+          >
+            ↶
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Shift+Z)"
+            className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-zinc-900"
+          >
+            ↷
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-1 rounded-md border border-zinc-200 p-0.5 dark:border-zinc-800">
