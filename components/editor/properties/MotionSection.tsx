@@ -3,11 +3,11 @@
 import { AnimatableProps, AnimationTrigger, DesignNode, Easing, NodeAnimation, Page } from "@/types/document";
 
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-50";
+  "w-full rounded-md border border-editor-border bg-editor-elevated px-2 py-1.5 text-sm text-editor-foreground outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/30";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-xs text-zinc-500">
+    <label className="flex flex-col gap-1 text-xs text-editor-muted">
       {label}
       {children}
     </label>
@@ -40,10 +40,10 @@ function AnimatablePropsFields({
 }) {
   return (
     <div>
-      <p className="mb-1 text-[11px] font-medium text-zinc-400">{label}</p>
+      <p className="mb-1 text-[11px] font-medium text-editor-muted">{label}</p>
       <div className="grid grid-cols-3 gap-1.5">
         {PROP_KEYS.map((key) => (
-          <label key={key} className="flex flex-col gap-0.5 text-[10px] text-zinc-500">
+          <label key={key} className="flex flex-col gap-0.5 text-[10px] text-editor-muted">
             {key}
             <input
               type="number"
@@ -56,7 +56,7 @@ function AnimatablePropsFields({
                 else next[key] = Number(raw);
                 onChange(next);
               }}
-              className="w-full rounded border border-zinc-300 bg-white px-1 py-1 text-xs text-zinc-900 outline-none focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              className="w-full rounded border border-editor-border bg-editor-elevated px-1 py-1 text-xs text-editor-foreground outline-none focus:border-brand"
             />
           </label>
         ))}
@@ -88,23 +88,20 @@ export default function MotionSection({ node, pages, updateSelected }: MotionSec
     <>
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">Motion</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-editor-muted">Motion</p>
           <button
             onClick={() => setAnimations([...animations, newAnimation()])}
-            className="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="cursor-pointer text-xs font-medium text-brand hover:text-brand-hover"
           >
             + Add
           </button>
         </div>
         {animations.length === 0 && (
-          <p className="text-xs text-zinc-400">No animations on this element.</p>
+          <p className="text-xs text-editor-muted">No animations on this element.</p>
         )}
         <div className="flex flex-col gap-3">
           {animations.map((anim) => (
-            <div
-              key={anim.id}
-              className="rounded-md border border-zinc-200 p-2.5 dark:border-zinc-800"
-            >
+            <div key={anim.id} className="rounded-md border border-editor-border p-2.5">
               <div className="mb-2 flex items-center justify-between">
                 <select
                   value={anim.trigger}
@@ -119,7 +116,7 @@ export default function MotionSection({ node, pages, updateSelected }: MotionSec
                 </select>
                 <button
                   onClick={() => setAnimations(animations.filter((a) => a.id !== anim.id))}
-                  className="text-xs text-red-600 hover:underline"
+                  className="cursor-pointer text-xs text-red-400 hover:underline"
                 >
                   Remove
                 </button>
@@ -157,9 +154,10 @@ export default function MotionSection({ node, pages, updateSelected }: MotionSec
                 </Field>
               </div>
 
-              <label className="mt-2 flex items-center gap-1.5 text-xs text-zinc-500">
+              <label className="mt-2 flex items-center gap-1.5 text-xs text-editor-muted">
                 <input
                   type="checkbox"
+                  className="accent-brand"
                   checked={anim.repeat}
                   onChange={(e) => updateAnimation(anim.id, { repeat: e.target.checked })}
                 />
@@ -184,7 +182,7 @@ export default function MotionSection({ node, pages, updateSelected }: MotionSec
       </section>
 
       <section>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-editor-muted">
           Interaction
         </p>
         <Field label="On click">

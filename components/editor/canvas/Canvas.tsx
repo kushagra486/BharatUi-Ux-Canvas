@@ -23,10 +23,12 @@ export default function Canvas() {
 
   return (
     <div
-      className="flex flex-1 items-start justify-center overflow-auto bg-zinc-100 p-12 dark:bg-zinc-900"
+      className="flex-1 overflow-auto bg-[#1e2030] p-12"
       onPointerDown={() => selectNode(null)}
     >
-      <div className="shadow-lg">
+      {/* mx-auto + w-max centres the page when it fits, but (unlike flex
+          justify-center) keeps a wider page's left edge scrollable. */}
+      <div className="mx-auto w-max shadow-2xl shadow-black/40">
         <NodeView node={effectiveRoot} document={page.document} isRoot />
       </div>
     </div>

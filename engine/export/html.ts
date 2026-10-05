@@ -10,13 +10,14 @@
 
 import {
   AnimatableProps,
+  Asset,
   Breakpoint,
   ComponentDefinition,
   DesignDocument,
   DesignNode,
   Page,
 } from "@/types/document";
-import { detachInstance } from "@/engine/document/document";
+import { detachInstance, resolveImageSrc } from "@/engine/document/document";
 
 function flattenInstances(doc: DesignDocument, components: ComponentDefinition[]): DesignDocument {
   let result = doc;
@@ -137,6 +138,8 @@ interface GenResult {
   rules: string[];
   keyframes: string[];
   reducedMotionSelectors: string[];
+  /** Asset library entries, so image nodes linked to an asset embed its data URL. */
+  assets: Asset[];
 }
 
 function renderNode(
@@ -223,7 +226,7 @@ function renderNode(
     case "button":
       return `<button class="${cls}" type="button">${escapeHtml(node.props.text || "")}</button>`;
     case "image":
-      return `<img class="${cls}" src="${escapeHtml(node.props.src || "")}" alt="${escapeHtml(node.props.alt || "")}" />`;
+      return `<img class="${cls}" src="${escapeHtml(resolveImageSrc(node, out.assets))}" alt="${escapeHtml(node.props.alt || "")}" />`;
     default:
       return `<div class="${cls}">\n${childrenHtml}\n</div>`;
   }
@@ -232,12 +235,13 @@ function renderNode(
 export function generateHtmlDocument(
   page: Page,
   components: ComponentDefinition[],
-  projectName: string
+  projectName: string,
+  assets: Asset[] = []
 ): string {
   const flatDoc = flattenInstances(page.document, components);
   const root = flatDoc.nodes[flatDoc.rootId];
 
-  const out: GenResult = { html: "", rules: [], keyframes: [], reducedMotionSelectors: [] };
+  const out: GenResult = { html: "", rules: [], keyframes: [], reducedMotionSelectors: [], assets };
   const bodyHtml = renderNode(root, flatDoc, true, false, out);
 
   const reducedMotionBlock =

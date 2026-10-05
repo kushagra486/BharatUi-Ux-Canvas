@@ -77,6 +77,11 @@ export interface DesignNode {
     src?: string;
     alt?: string;
     href?: string;
+    // For image nodes populated from the asset library: resolves to the
+    // asset's current dataUrl at render/export time, so replacing an asset
+    // updates every node referencing it (blueprint 5.13). `src` remains the
+    // fallback for a manually pasted image URL.
+    assetId?: string;
   };
   style: NodeStyle;
   layout: NodeLayout;
@@ -112,6 +117,17 @@ export interface ComponentDefinition {
   document: DesignDocument;
 }
 
+// An uploaded media file (blueprint 5.13 Assets & Media). Images only for now —
+// this app has no video/audio/3D playback surface to make those useful yet.
+export interface Asset {
+  id: string;
+  name: string;
+  dataUrl: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
 export interface Project {
   id: string;
   ownerEmail: string;
@@ -120,6 +136,7 @@ export interface Project {
   updatedAt: string;
   pages: Page[];
   components: ComponentDefinition[];
+  assets: Asset[];
 }
 
 export const BREAKPOINT_WIDTHS: Record<Breakpoint, number> = {
@@ -165,5 +182,6 @@ export function createProject(ownerEmail: string, name: string): Project {
     updatedAt: now,
     pages: [createPage("Home")],
     components: [],
+    assets: [],
   };
 }

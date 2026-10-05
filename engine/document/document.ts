@@ -2,12 +2,21 @@
 // Kept framework-neutral so the renderer, editor and future code generator can share it.
 
 import {
+  Asset,
   Breakpoint,
   DesignDocument,
   DesignNode,
   NodeLayout,
   NodeType,
 } from "@/types/document";
+
+/** Resolves an image node's effective src: the asset library entry it references, or a manually pasted URL. */
+export function resolveImageSrc(node: DesignNode, assets: Asset[]): string {
+  if (node.props.assetId) {
+    return assets.find((a) => a.id === node.props.assetId)?.dataUrl ?? "";
+  }
+  return node.props.src ?? "";
+}
 
 function defaultsFor(type: NodeType): Pick<DesignNode, "props" | "style" | "layout" | "name"> {
   switch (type) {

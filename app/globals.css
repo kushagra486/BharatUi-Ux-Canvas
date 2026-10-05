@@ -1,26 +1,42 @@
 @import "tailwindcss";
 
+/* Design system: a dark, professional editor aesthetic (in the vein of
+   Figma/Framer) — slate chrome, violet primary, cyan accent, Plus Jakarta
+   Sans. The whole app chrome is dark; only the design canvas and the
+   preview page render the user's own (light by default) content. */
+@theme {
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-background: #0b1020;
+  --color-foreground: #f4f4f5;
+
+  --color-brand: #7c3aed;
+  --color-brand-hover: #6d28d9;
+  --color-brand-foreground: #ffffff;
+  --color-accent: #0891b2;
+  --color-accent-hover: #0e7490;
+
+  /* Editor chrome: dark panels around a light canvas. */
+  --color-editor: #0f172a;
+  --color-editor-elevated: #171939;
+  --color-editor-border: rgba(255, 255, 255, 0.08);
+  --color-editor-foreground: #f4f4f5;
+  --color-editor-muted: #94a3b8;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
 }
+
+/* Visible keyboard focus everywhere, without a ring on mouse clicks. */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+

@@ -28,16 +28,22 @@ function getServerSnapshot(): Session | null {
   return null;
 }
 
+const noopSubscribe = () => () => {};
+
 // Redirects to /login when no session exists; returns the session once resolved.
 export function useRequireSession(): Session | null {
   const router = useRouter();
   const session = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  // The hydration render always sees the server snapshot (no session), so
+  // only redirect once we're reading real client storage — otherwise a
+  // reload of a protected page would bounce a signed-in user to /login.
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
   useEffect(() => {
-    if (!session) {
+    if (hydrated && !session) {
       router.replace("/login");
     }
-  }, [session, router]);
+  }, [hydrated, session, router]);
 
   return session;
 }

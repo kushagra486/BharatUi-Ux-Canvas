@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatableProps, DesignDocument, DesignNode, NodeAnimation } from "@/types/document";
 import { useEditorStore } from "@/store/editor-store";
-import { findFirstTextNodeId, resolveNode } from "@/engine/document/document";
+import { findFirstTextNodeId, resolveImageSrc, resolveNode } from "@/engine/document/document";
 
 interface NodeViewProps {
   node: DesignNode;
@@ -57,6 +57,7 @@ export default function NodeView({
   const activeBreakpoint = useEditorStore((s) => s.activeBreakpoint);
   const project = useEditorStore((s) => s.project);
   const node = resolveNode(rawNode, readOnly ? "desktop" : activeBreakpoint);
+  const imageSrc = node.type === "image" ? resolveImageSrc(node, project?.assets ?? []) : "";
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(
     null
   );
@@ -237,7 +238,7 @@ export default function NodeView({
         padding: node.autoLayout?.padding,
         cursor: readOnly ? "default" : draggable ? "move" : "default",
         userSelect: "none",
-        outline: isSelected ? "2px solid #2563eb" : "1px solid transparent",
+        outline: isSelected ? "2px solid #7c3aed" : "1px solid transparent",
         outlineOffset: -1,
         ...animationStyles,
       };
@@ -261,10 +262,10 @@ export default function NodeView({
       {node.type === "text" && <span className="px-1">{displayText || "Text"}</span>}
       {node.type === "button" && <span className="px-2">{displayText || "Button"}</span>}
       {node.type === "image" && (
-        <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">
-          {node.props.src ? (
+        <div className="flex h-full w-full items-center justify-center bg-slate-100 text-xs text-slate-400">
+          {imageSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={node.props.src} alt={node.props.alt || ""} className="h-full w-full object-cover" />
+            <img src={imageSrc} alt={node.props.alt || ""} className="h-full w-full object-cover" />
           ) : (
             "Image"
           )}
@@ -283,7 +284,7 @@ export default function NodeView({
               onNavigate={onNavigate}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">
+            <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
               Missing component
             </div>
           )}
@@ -312,7 +313,7 @@ export default function NodeView({
           onPointerDown={handleResizeDown}
           onPointerMove={handleResizeMove}
           onPointerUp={handleResizeUp}
-          className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm border border-white bg-blue-600"
+          className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm border border-white bg-brand"
         />
       )}
     </div>

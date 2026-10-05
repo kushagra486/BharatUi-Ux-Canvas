@@ -7,6 +7,7 @@ import {
   createPage,
   DesignDocument,
   Breakpoint,
+  Asset,
 } from "@/types/document";
 import { getProject, saveProject } from "@/lib/db/projects";
 import {
@@ -23,6 +24,9 @@ const HISTORY_LIMIT = 50;
 // Continuous edits (dragging, resizing, typing) within this window collapse
 // into a single undo step instead of one per pointermove/keystroke.
 const CONTINUOUS_HISTORY_THROTTLE_MS = 500;
+// Assets are stored as base64 data URLs inside the project's localStorage entry,
+// so this caps how much a single upload can bloat that (shared, quota-limited) blob.
+const MAX_ASSET_BYTES = 2 * 1024 * 1024;
 
 interface EditorState {
   project: Project | null;
@@ -61,6 +65,9 @@ interface EditorState {
   createComponentFromSelection: () => void;
   insertComponentInstance: (componentId: string) => void;
   detachSelected: () => void;
+  uploadAsset: (file: File) => Promise<void>;
+  deleteAsset: (assetId: string) => void;
+  insertAssetImage: (assetId: string) => void;
   undo: () => void;
   redo: () => void;
   save: () => Promise<void>;
@@ -117,8 +124,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   load: async (projectId: string) => {
     set({ status: "loading" });
     const loaded = await getProject(projectId);
-    // Older saved projects predate the components field; default it in.
-    const project = loaded ? { ...loaded, components: loaded.components ?? [] } : null;
+    // Older saved projects predate the components/assets fields; default them in.
+    const project = loaded
+      ? { ...loaded, components: loaded.components ?? [], assets: loaded.assets ?? [] }
+      : null;
     set({
       project,
       activePageId: project?.pages[0]?.id ?? null,
@@ -273,6 +282,70 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       if (!definition) return doc;
       return detachInstance(doc, selectedNodeId, definition.document, node.overrideText);
     });
+  },
+
+  uploadAsset: async (file) => {
+    const { project } = get();
+    if (!project) return;
+    if (file.size > MAX_ASSET_BYTES) {
+      throw new Error(`"${file.name}" is larger than 2MB — everything is stored in the browser.`);
+    }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+    const asset: Asset = {
+      id: crypto.randomUUID(),
+      name: file.name,
+      dataUrl,
+      mimeType: file.type,
+      size: file.size,
+      createdAt: new Date().toISOString(),
+    };
+    pushHistory(get, set);
+    set({ project: { ...project, assets: [...project.assets, asset] } });
+    get().save();
+  },
+
+  deleteAsset: (assetId) => {
+    const { project } = get();
+    if (!project) return;
+    pushHistory(get, set);
+    set({ project: { ...project, assets: project.assets.filter((a) => a.id !== assetId) } });
+    get().save();
+  },
+
+  insertAssetImage: (assetId) => {
+    const { project, activePageId, selectedNodeId } = get();
+    if (!project || !activePageId) return;
+    const pageIdx = project.pages.findIndex((p) => p.id === activePageId);
+    if (pageIdx === -1) return;
+    const page = project.pages[pageIdx];
+    const selectedNode = selectedNodeId ? page.document.nodes[selectedNodeId] : null;
+
+    if (selectedNode?.type === "image") {
+      // Applying to a selected image replaces its source instead of inserting a duplicate.
+      withActivePageDocument(get, set, (doc) =>
+        updateNode(doc, selectedNode.id, { props: { assetId, src: undefined } })
+      );
+      return;
+    }
+
+    let insertedId: string | null = null;
+    withActivePageDocument(get, set, (doc) => {
+      const canContainChildren =
+        selectedNode?.type === "frame" || selectedNode?.type === "container";
+      const parentId = canContainChildren ? selectedNode!.id : doc.rootId;
+      const { doc: nextDoc, id } = addNode(doc, "image", parentId, {
+        x: 40 + Math.round(Math.random() * 40),
+        y: 40 + Math.round(Math.random() * 40),
+      });
+      insertedId = id;
+      return updateNode(nextDoc, id, { props: { assetId } });
+    });
+    if (insertedId) set({ selectedNodeId: insertedId });
   },
 
   undo: () => {

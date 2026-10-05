@@ -30,6 +30,12 @@ MVP 3** from the project blueprint:
 - Undo/redo across the whole editor (inserts, deletes, property edits,
   pages, components), with Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z — a continuous
   gesture like a drag or a burst of typing collapses into one undo step
+- Asset library: upload images (drag-and-drop or file picker, up to 2MB
+  each), insert them or apply one to a selected image; linked images
+  render on the canvas, in preview, and are embedded in the HTML export
+- A consistent dark design system across the app — slate editor chrome,
+  violet primary / cyan accent, Plus Jakarta Sans, visible keyboard focus
+  — plus a redesigned landing page, auth screens and dashboard
 
 ## Getting started
 
@@ -87,7 +93,7 @@ later milestones — the code generator, per the project blueprint.
 See the full blueprint for the complete feature catalogue, architecture,
 and phased roadmap (illustration, 3D, marketplace, AI studio,
 collaboration, and publishing). Still outstanding after MVP 1–3: real
-backend/auth (everything today is local-only, per-browser storage), asset
-library/upload, design tokens, a full keyframe timeline UI, scroll/
+backend/auth (everything today is local-only, per-browser storage), design
+tokens, a full keyframe timeline UI, scroll/
 cinematic effects, React/Next.js export, whole-project export, illustration/
 3D/AI studio, collaboration, marketplace, and deployment.

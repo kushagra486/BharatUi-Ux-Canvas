@@ -12,6 +12,7 @@ import {
   renameProject,
 } from "@/lib/db/projects";
 import { Project } from "@/types/document";
+import Logo from "@/components/brand/Logo";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -56,93 +57,107 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
+  const secondaryAction =
+    "cursor-pointer rounded-md px-2 py-1 text-editor-muted transition-colors hover:bg-white/5 hover:text-editor-foreground";
+
   return (
-    <div className="flex flex-1 flex-col bg-zinc-50 dark:bg-black">
-      <header className="flex items-center justify-between border-b border-zinc-200 px-8 py-4 dark:border-zinc-800">
-        <span className="font-semibold text-zinc-950 dark:text-zinc-50">
-          Bharat UI Canvas
-        </span>
-        <div className="flex items-center gap-4 text-sm text-zinc-500">
-          <span>{session.email}</span>
-          <button
-            onClick={() => {
-              signOut();
-              router.push("/login");
-            }}
-            className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-          >
-            Sign out
-          </button>
+    <div className="flex flex-1 flex-col">
+      <header className="border-b border-editor-border bg-editor/80 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+          <Logo href="/dashboard" />
+          <div className="flex items-center gap-3 text-sm">
+            <span className="hidden text-editor-muted sm:inline">{session.email}</span>
+            <button
+              onClick={() => {
+                signOut();
+                router.push("/login");
+              }}
+              className="cursor-pointer rounded-lg border border-editor-border px-3 py-1.5 text-editor-foreground/90 transition-colors hover:bg-white/5"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-8 py-10">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-zinc-950 dark:text-zinc-50">
-            Your projects
-          </h1>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-editor-foreground">Your projects</h1>
+            <p className="mt-1 text-sm text-editor-muted">
+              {loading ? "\u00a0" : `${projects.length} project${projects.length === 1 ? "" : "s"}`}
+            </p>
+          </div>
           <button
             onClick={handleCreate}
-            className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+            className="cursor-pointer rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground shadow-lg shadow-brand/25 transition-colors hover:bg-brand-hover"
           >
             + New project
           </button>
         </div>
 
         {loading ? (
-          <p className="mt-8 text-sm text-zinc-500">Loading…</p>
+          <ul className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="h-56 animate-pulse rounded-2xl border border-editor-border bg-editor" />
+            ))}
+          </ul>
         ) : projects.length === 0 ? (
-          <div className="mt-16 flex flex-col items-center gap-3 text-center text-zinc-500">
-            <p>No projects yet.</p>
+          <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl border border-dashed border-editor-border bg-editor/50 px-6 py-20 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand/15 text-2xl text-violet-300" aria-hidden>
+              +
+            </span>
+            <div>
+              <p className="font-medium text-editor-foreground">No projects yet</p>
+              <p className="mt-1 text-sm text-editor-muted">Create one to open the editor.</p>
+            </div>
             <button
               onClick={handleCreate}
-              className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+              className="cursor-pointer rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-hover"
             >
               Create your first project
             </button>
           </div>
         ) : (
-          <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((p) => (
               <li
                 key={p.id}
-                className="group rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
+                className="group overflow-hidden rounded-2xl border border-editor-border bg-editor transition-colors hover:border-brand/50"
               >
                 <button
                   onClick={() => router.push(`/editor/${p.id}`)}
-                  className="flex h-28 w-full items-center justify-center rounded-lg bg-zinc-100 text-xs text-zinc-400 dark:bg-zinc-900"
+                  aria-label={`Open ${p.name} in the editor`}
+                  className="relative flex h-36 w-full cursor-pointer items-center justify-center bg-gradient-to-br from-brand/20 via-editor-elevated to-accent/10"
                 >
-                  Open editor →
+                  <span className="rounded-md bg-black/30 px-3 py-1.5 text-xs font-medium text-editor-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                    Open editor →
+                  </span>
+                  <span className="absolute bottom-3 left-3 rounded bg-black/30 px-1.5 py-0.5 text-[10px] text-editor-muted">
+                    {p.pages.length} page{p.pages.length === 1 ? "" : "s"}
+                  </span>
                 </button>
-                <div className="mt-3 flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-zinc-950 dark:text-zinc-50">
-                      {p.name}
-                    </p>
-                    <p className="text-xs text-zinc-500">
-                      Updated {new Date(p.updatedAt).toLocaleString()}
-                    </p>
+                <div className="p-4">
+                  <p className="truncate font-medium text-editor-foreground" title={p.name}>
+                    {p.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-editor-muted">
+                    Updated {new Date(p.updatedAt).toLocaleString()}
+                  </p>
+                  <div className="mt-3 flex gap-1 text-xs">
+                    <button onClick={() => handleRename(p.id, p.name)} className={secondaryAction}>
+                      Rename
+                    </button>
+                    <button onClick={() => handleDuplicate(p.id)} className={secondaryAction}>
+                      Duplicate
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p.id)}
+                      className="ml-auto cursor-pointer rounded-md px-2 py-1 text-red-400 transition-colors hover:bg-red-500/10"
+                    >
+                      Delete
+                    </button>
                   </div>
-                </div>
-                <div className="mt-3 flex gap-2 text-xs">
-                  <button
-                    onClick={() => handleRename(p.id, p.name)}
-                    className="rounded-md border border-zinc-300 px-2 py-1 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-                  >
-                    Rename
-                  </button>
-                  <button
-                    onClick={() => handleDuplicate(p.id)}
-                    className="rounded-md border border-zinc-300 px-2 py-1 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-                  >
-                    Duplicate
-                  </button>
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    className="rounded-md border border-red-300 px-2 py-1 text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950"
-                  >
-                    Delete
-                  </button>
                 </div>
               </li>
             ))}

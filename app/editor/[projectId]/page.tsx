@@ -59,19 +59,23 @@ export default function EditorPage() {
   if (!session) return null;
 
   if (status === "loading" || status === "idle") {
-    return <div className="flex flex-1 items-center justify-center text-sm text-zinc-500">Loading…</div>;
+    return (
+      <div className="flex flex-1 items-center justify-center bg-editor text-sm text-editor-muted">
+        Loading…
+      </div>
+    );
   }
 
   if (status === "error" || !project) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-zinc-500">
+      <div className="flex flex-1 items-center justify-center bg-editor text-sm text-editor-muted">
         Project not found.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex h-dvh flex-col overflow-hidden">
       <TopBar />
       <PageTabs />
       <div className="flex flex-1 overflow-hidden">
@@ -79,7 +83,7 @@ export default function EditorPage() {
         <Canvas />
         <PropertiesPanel />
       </div>
-      <div className="flex h-40 border-t border-zinc-200 dark:border-zinc-800">
+      <div className="flex h-40 border-t border-editor-border">
         <BottomPanel />
       </div>
     </div>

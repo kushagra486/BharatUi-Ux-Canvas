@@ -24,21 +24,19 @@ export default function TopBar() {
   const [exportOpen, setExportOpen] = useState(false);
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-950">
+    <header className="flex h-14 items-center justify-between border-b border-editor-border bg-editor px-4">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard" className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+        <Link href="/dashboard" className="text-sm font-semibold text-editor-foreground">
           Bharat UI Canvas
         </Link>
-        <span className="text-zinc-300 dark:text-zinc-700">/</span>
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">
-          {project?.name ?? "Loading…"}
-        </span>
+        <span className="text-white/15">/</span>
+        <span className="text-sm text-editor-muted">{project?.name ?? "Loading…"}</span>
         <div className="ml-2 flex items-center gap-0.5">
           <button
             onClick={undo}
             disabled={!canUndo}
             title="Undo (Ctrl+Z)"
-            className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-zinc-900"
+            className="cursor-pointer rounded-md px-2 py-1 text-sm text-editor-muted transition-colors hover:bg-white/5 hover:text-editor-foreground disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
           >
             ↶
           </button>
@@ -46,22 +44,22 @@ export default function TopBar() {
             onClick={redo}
             disabled={!canRedo}
             title="Redo (Ctrl+Shift+Z)"
-            className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-zinc-900"
+            className="cursor-pointer rounded-md px-2 py-1 text-sm text-editor-muted transition-colors hover:bg-white/5 hover:text-editor-foreground disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
           >
             ↷
           </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-1 rounded-md border border-zinc-200 p-0.5 dark:border-zinc-800">
+      <div className="flex items-center gap-1 rounded-lg border border-editor-border bg-editor-elevated p-0.5">
         {breakpoints.map((bp) => (
           <button
             key={bp.id}
             onClick={() => setBreakpoint(bp.id)}
-            className={`rounded px-2.5 py-1 text-xs font-medium ${
+            className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
               activeBreakpoint === bp.id
-                ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
-                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                ? "bg-brand text-brand-foreground"
+                : "text-editor-muted hover:text-editor-foreground"
             }`}
           >
             {bp.label}
@@ -74,20 +72,20 @@ export default function TopBar() {
           <>
             <button
               onClick={() => setExportOpen(true)}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              className="cursor-pointer rounded-md border border-editor-border px-3 py-1.5 text-xs font-medium text-editor-foreground/90 transition-colors hover:border-brand/50 hover:bg-white/5"
             >
               Export
             </button>
             <Link
               href={`/preview/${project.id}`}
               target="_blank"
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              className="cursor-pointer rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground transition-colors hover:bg-brand-hover"
             >
               Preview
             </Link>
           </>
         )}
-        <div className="w-14 text-right text-xs text-zinc-400">
+        <div className="w-14 text-right text-xs text-editor-muted">
           {status === "saving" ? "Saving…" : status === "saved" ? "Saved" : ""}
         </div>
       </div>

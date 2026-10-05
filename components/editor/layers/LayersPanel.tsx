@@ -22,10 +22,10 @@ function LayerRow({
       <button
         onClick={() => selectNode(nodeId)}
         style={{ paddingLeft: 8 + depth * 14 }}
-        className={`flex w-full items-center gap-2 rounded-md py-1.5 pr-2 text-left text-sm ${
+        className={`flex w-full cursor-pointer items-center gap-2 rounded-md py-1.5 pr-2 text-left text-sm transition-colors ${
           selectedNodeId === nodeId
-            ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-            : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            ? "bg-brand/15 text-brand"
+            : "text-editor-foreground/80 hover:bg-white/5 hover:text-editor-foreground"
         }`}
       >
         <span className="truncate">{node.name}</span>
@@ -44,7 +44,7 @@ export default function LayersPanel() {
   if (!page) return null;
 
   return (
-    <div className="flex flex-1 flex-col overflow-auto p-2">
+    <div className="flex flex-1 flex-col overflow-auto bg-editor p-2">
       <LayerRow nodeId={page.document.rootId} document={page.document} depth={0} />
     </div>
   );

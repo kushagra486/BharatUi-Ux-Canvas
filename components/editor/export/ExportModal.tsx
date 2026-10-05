@@ -13,7 +13,7 @@ export default function ExportModal({ onClose }: { onClose: () => void }) {
 
   const code = useMemo(() => {
     if (!project || !page) return "";
-    return generateHtmlDocument(page, project.components, project.name);
+    return generateHtmlDocument(page, project.components, project.name, project.assets);
   }, [project, page]);
 
   function handleCopy() {
@@ -41,38 +41,38 @@ export default function ExportModal({ onClose }: { onClose: () => void }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-3xl flex-col rounded-xl bg-white shadow-xl dark:bg-zinc-950"
+        className="flex h-full w-full max-w-3xl flex-col rounded-xl border border-editor-border bg-editor shadow-2xl"
       >
-        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+        <div className="flex items-center justify-between border-b border-editor-border px-4 py-3">
           <div>
-            <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+            <p className="text-sm font-semibold text-editor-foreground">
               Export &quot;{page.name}&quot; — HTML/CSS
             </p>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-editor-muted">
               A self-contained static page. Click-triggered animations and click-navigate
               aren&apos;t included yet — they need JavaScript, which this export doesn&apos;t emit.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            className="cursor-pointer rounded-md px-2 py-1 text-sm text-editor-muted transition-colors hover:bg-white/5 hover:text-editor-foreground"
           >
             Close
           </button>
         </div>
-        <pre className="flex-1 overflow-auto bg-zinc-50 p-4 text-xs text-zinc-800 dark:bg-black dark:text-zinc-200">
+        <pre className="flex-1 overflow-auto bg-black/30 p-4 text-xs text-editor-foreground/90">
           <code>{code}</code>
         </pre>
-        <div className="flex justify-end gap-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+        <div className="flex justify-end gap-2 border-t border-editor-border px-4 py-3">
           <button
             onClick={handleCopy}
-            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            className="cursor-pointer rounded-md border border-editor-border px-3 py-1.5 text-sm text-editor-foreground/90 transition-colors hover:border-brand/50 hover:bg-white/5"
           >
             {copied ? "Copied" : "Copy"}
           </button>
           <button
             onClick={handleDownload}
-            className="rounded-md bg-zinc-950 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+            className="cursor-pointer rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-hover"
           >
             Download .html
           </button>

@@ -7,7 +7,7 @@ import MotionSection from "./MotionSection";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-xs text-zinc-500">
+    <label className="flex flex-col gap-1 text-xs text-editor-muted">
       {label}
       {children}
     </label>
@@ -15,7 +15,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-50";
+  "w-full rounded-md border border-editor-border bg-editor-elevated px-2 py-1.5 text-sm text-editor-foreground outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/30";
 
 const selectClass = inputClass;
 
@@ -46,10 +46,13 @@ export default function PropertiesPanel() {
   const component = isInstance
     ? project?.components.find((c) => c.id === node.componentId)
     : undefined;
+  const linkedAsset = node?.props.assetId
+    ? project?.assets.find((a) => a.id === node.props.assetId)
+    : undefined;
 
   if (!node || !rawNode) {
     return (
-      <aside className="w-72 border-l border-zinc-200 bg-white p-4 text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950">
+      <aside className="w-72 border-l border-editor-border bg-editor p-4 text-sm text-editor-muted">
         Select an element to edit its properties.
       </aside>
     );
@@ -59,7 +62,7 @@ export default function PropertiesPanel() {
   const autoLayout = node.autoLayout;
 
   return (
-    <aside className="flex w-72 flex-col gap-5 overflow-auto border-l border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+    <aside className="flex w-72 flex-col gap-5 overflow-auto border-l border-editor-border bg-editor p-4">
       <div className="flex items-center justify-between">
         <input
           value={node.name}
@@ -69,7 +72,7 @@ export default function PropertiesPanel() {
       </div>
 
       {activeBreakpoint !== "desktop" && (
-        <div className="flex items-center justify-between rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+        <div className="flex items-center justify-between rounded-md bg-amber-500/10 px-2 py-1.5 text-xs text-amber-400">
           <span>Editing {activeBreakpoint} override</span>
           {hasOverride && (
             <button
@@ -78,7 +81,7 @@ export default function PropertiesPanel() {
                 delete responsive[activeBreakpoint];
                 updateSelected({ responsive });
               }}
-              className="font-medium underline"
+              className="cursor-pointer font-medium underline"
             >
               Reset
             </button>
@@ -87,7 +90,7 @@ export default function PropertiesPanel() {
       )}
 
       <section>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Layout</p>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-editor-muted">Layout</p>
         <div className="grid grid-cols-2 gap-2">
           <Field label="X">
             <input
@@ -135,12 +138,13 @@ export default function PropertiesPanel() {
       {canAutoLayout && (
         <section>
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-editor-muted">
               Auto layout
             </p>
-            <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+            <label className="flex items-center gap-1.5 text-xs text-editor-muted">
               <input
                 type="checkbox"
+                className="accent-brand"
                 checked={!!autoLayout}
                 onChange={(e) =>
                   updateSelected({
@@ -227,10 +231,10 @@ export default function PropertiesPanel() {
 
       {isInstance && (
         <section>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-editor-muted">
             Component instance
           </p>
-          <p className="mb-3 text-xs text-zinc-500">
+          <p className="mb-3 text-xs text-editor-muted">
             {component ? `Instance of "${component.name}"` : "Missing component definition"}
           </p>
           {component && (
@@ -245,7 +249,7 @@ export default function PropertiesPanel() {
           )}
           <button
             onClick={detachSelected}
-            className="mt-3 w-full rounded-md border border-zinc-300 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            className="mt-3 w-full rounded-md cursor-pointer border border-editor-border py-1.5 text-xs text-editor-foreground/90 transition-colors hover:border-brand/50 hover:bg-white/5"
           >
             Detach instance
           </button>
@@ -255,7 +259,7 @@ export default function PropertiesPanel() {
       {!isInstance && node.id !== page?.document.rootId && (
         <button
           onClick={createComponentFromSelection}
-          className="rounded-md border border-zinc-300 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          className="rounded-md cursor-pointer border border-editor-border py-1.5 text-xs text-editor-foreground/90 transition-colors hover:border-brand/50 hover:bg-white/5"
         >
           Create component from selection
         </button>
@@ -263,7 +267,7 @@ export default function PropertiesPanel() {
 
       {!isInstance && (node.type === "text" || node.type === "button") && (
         <section>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Content</p>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-editor-muted">Content</p>
           <Field label="Text">
             <input
               value={node.props.text ?? ""}
@@ -276,14 +280,30 @@ export default function PropertiesPanel() {
 
       {!isInstance && node.type === "image" && (
         <section>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Content</p>
-          <Field label="Image URL">
-            <input
-              value={node.props.src ?? ""}
-              onChange={(e) => updateSelected({ props: { src: e.target.value } })}
-              className={inputClass}
-            />
-          </Field>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-editor-muted">Content</p>
+          {linkedAsset ? (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-editor-border bg-editor-elevated px-2 py-1.5 text-xs">
+              <span className="truncate text-editor-foreground" title={linkedAsset.name}>
+                Asset: {linkedAsset.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => updateSelected({ props: { assetId: undefined } })}
+                className="shrink-0 rounded px-1.5 py-0.5 text-editor-muted transition-colors hover:bg-white/5 hover:text-editor-foreground focus-visible:outline-2 focus-visible:outline-brand"
+              >
+                Unlink
+              </button>
+            </div>
+          ) : (
+            <Field label="Image URL">
+              <input
+                value={node.props.src ?? ""}
+                // Typing a URL takes over from any asset-library link.
+                onChange={(e) => updateSelected({ props: { src: e.target.value, assetId: undefined } })}
+                className={inputClass}
+              />
+            </Field>
+          )}
           <div className="mt-2">
             <Field label="Alt text">
               <input
@@ -298,14 +318,14 @@ export default function PropertiesPanel() {
 
       {!isInstance && (
       <section>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-400">Style</p>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-editor-muted">Style</p>
         <div className="grid grid-cols-2 gap-2">
           <Field label="Background">
             <input
               type="color"
               value={node.style.backgroundColor ?? "#ffffff"}
               onChange={(e) => updateSelected({ style: { backgroundColor: e.target.value } })}
-              className="h-8 w-full rounded-md border border-zinc-300 dark:border-zinc-700"
+              className="h-8 w-full cursor-pointer rounded-md border border-editor-border bg-editor-elevated"
             />
           </Field>
           <Field label="Text color">
@@ -313,7 +333,7 @@ export default function PropertiesPanel() {
               type="color"
               value={node.style.color ?? "#171717"}
               onChange={(e) => updateSelected({ style: { color: e.target.value } })}
-              className="h-8 w-full rounded-md border border-zinc-300 dark:border-zinc-700"
+              className="h-8 w-full cursor-pointer rounded-md border border-editor-border bg-editor-elevated"
             />
           </Field>
           <Field label="Radius">
@@ -340,7 +360,7 @@ export default function PropertiesPanel() {
 
       <button
         onClick={deleteSelected}
-        className="mt-auto rounded-md border border-red-300 py-2 text-sm text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950"
+        className="mt-auto cursor-pointer rounded-md border border-red-500/30 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10"
       >
         Delete element
       </button>

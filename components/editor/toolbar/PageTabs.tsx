@@ -13,14 +13,12 @@ export default function PageTabs() {
   if (!project) return null;
 
   return (
-    <div className="flex h-10 items-center gap-1 border-b border-zinc-200 bg-white px-2 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="flex h-10 items-center gap-1 border-b border-editor-border bg-editor px-2">
       {project.pages.map((page) => (
         <div
           key={page.id}
-          className={`group flex items-center rounded-md ${
-            page.id === activePageId
-              ? "bg-zinc-100 dark:bg-zinc-900"
-              : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
+          className={`group flex items-center rounded-md transition-colors ${
+            page.id === activePageId ? "bg-white/10" : "hover:bg-white/5"
           }`}
         >
           <button
@@ -30,10 +28,8 @@ export default function PageTabs() {
               if (name) renamePage(page.id, name);
             }}
             title="Double-click to rename"
-            className={`px-3 py-1.5 text-xs font-medium ${
-              page.id === activePageId
-                ? "text-zinc-950 dark:text-zinc-50"
-                : "text-zinc-500"
+            className={`cursor-pointer px-3 py-1.5 text-xs font-medium ${
+              page.id === activePageId ? "text-editor-foreground" : "text-editor-muted"
             }`}
           >
             {page.name}
@@ -42,7 +38,7 @@ export default function PageTabs() {
             <button
               onClick={() => deletePage(page.id)}
               title="Delete page"
-              className="hidden pr-2 text-zinc-400 hover:text-red-600 group-hover:block"
+              className="hidden cursor-pointer pr-2 text-editor-muted hover:text-red-400 group-hover:block"
             >
               ×
             </button>
@@ -51,7 +47,7 @@ export default function PageTabs() {
       ))}
       <button
         onClick={addPage}
-        className="ml-1 rounded-md px-2 py-1.5 text-xs text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-300"
+        className="ml-1 cursor-pointer rounded-md px-2 py-1.5 text-xs text-editor-muted transition-colors hover:bg-white/5 hover:text-editor-foreground"
       >
         + Page
       </button>
